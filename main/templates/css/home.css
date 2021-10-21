@@ -1,0 +1,20 @@
+.header {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+  
+    .header__container { /* не понимаю почему ругается на хедер*/
+      align-items: center;
+    }
+  
+    .left {
+      grid-column: 2 span;
+    }
+  
+    .right {
+      display: flex;
+      justify-content: flex-end;
+      grid-column: 10 span;
+    }
+  }
