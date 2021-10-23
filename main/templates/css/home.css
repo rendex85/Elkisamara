@@ -17,4 +17,14 @@
       justify-content: flex-end;
       grid-column: 10 span;
     }
+    .backscene{
+      position: absolute;
+      width: 1920px;
+      height: 633.02px;
+      left: 0px;
+      top: 83.09px;
+
+      background: rgba(250, 254, 255, 0.54);
+      backdrop-filter: blur(13px);
+    }
   }
