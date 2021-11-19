@@ -93,7 +93,7 @@ class Product(models.Model):
     def get_model_name(self):
         return self.__class__.__name__.lower()
 
-
+"""
 class Notebook(Product):
 
     diagonal = models.CharField(max_length=255, verbose_name='Диагональ')
@@ -108,8 +108,8 @@ class Notebook(Product):
 
     def get_absolute_url(self):
         return get_product_url(self, 'product_detail')
-
-
+"""
+"""
 class Smartphone(Product):
 
     diagonal = models.CharField(max_length=255, verbose_name='Диагональ')
@@ -130,7 +130,7 @@ class Smartphone(Product):
     def get_absolute_url(self):
         return get_product_url(self, 'product_detail')
 
-
+"""
 class CartProduct(models.Model):
 
     user = models.ForeignKey('Customer', verbose_name='Покупатель', on_delete=models.CASCADE)
