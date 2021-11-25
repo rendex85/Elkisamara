@@ -5,9 +5,9 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.views.generic import DetailView, View
 
-from .models import Notebook, Smartphone, Category, LatestProducts, Customer, Cart, CartProduct
+from .models import  Category, LatestProducts, Customer, Cart, CartProduct
 from .mixins import CategoryDetailMixin, CartMixin
-from .forms import OrderForm
+#from .forms import OrderForm
 from .utils import recalc_cart
 
 
@@ -29,8 +29,8 @@ class BaseView(CartMixin, View):
 class ProductDetailView(CartMixin, CategoryDetailMixin, DetailView):
 
     CT_MODEL_MODEL_CLASS = {
-        'notebook': Notebook,
-        'smartphone': Smartphone
+        'notebook': None,
+        'smartphone': None
     }
 
     def dispatch(self, request, *args, **kwargs):
@@ -127,16 +127,16 @@ class CheckoutView(CartMixin, View):
 
     def get(self, request, *args, **kwargs):
         categories = Category.objects.get_categories_for_left_sidebar()
-        form = OrderForm(request.POST or None)
+        #form = OrderForm(request.POST or None)
         context = {
             'cart': self.cart,
             'categories': categories,
-            'form': form
+            'form': None
         }
         return render(request, 'checkout.html', context)
 
 
-class MakeOrderView(CartMixin, View):
+"""class MakeOrderView(CartMixin, View):
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -160,4 +160,4 @@ class MakeOrderView(CartMixin, View):
             customer.orders.add(new_order)
             messages.add_message(request, messages.INFO, 'Спасибо за заказ! Менеджер с Вами свяжется')
             return HttpResponseRedirect('/')
-        return HttpResponseRedirect('/checkout/')
+        return HttpResponseRedirect('/checkout/')"""
