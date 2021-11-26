@@ -44,7 +44,7 @@ class LatestProducts:
 
 class CategoryManager(models.Manager):
     CATEGORY_NAME_COUNT_NAME = {
-        'Елки': 'notebook__count',
+        'Елки': 'tree__count',
         'Смартфоны': 'smartphone__count'
     }
 
@@ -107,6 +107,8 @@ class Product(models.Model):
         return self.__class__.__name__.lower()
 
 
+class Notebook(Product):
+
 class ChristmasTree(Product):
     height = models.DecimalField(max_digits=9, decimal_places=2, verbose_name='Рост елки, м', null=True, blank=True)
     tree_type = models.CharField(max_length=255, verbose_name='Тип дерева', null=True, blank=True)
@@ -120,6 +122,7 @@ class ChristmasTree(Product):
     def get_absolute_url(self):
         return get_product_url(self, 'product_detail')
 
+      
     class Meta:
         verbose_name = 'Товар: Елка'
         verbose_name_plural = 'Товар: Елки'
@@ -147,6 +150,9 @@ class Smartphone(Product):
         return get_product_url(self, 'product_detail')
 
 """
+
+class CartProduct(models.Model):
+
 
 
 class CartProduct(models.Model):
