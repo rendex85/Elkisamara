@@ -4,7 +4,7 @@ from django.dispatch import receiver
 from main.models import Cart
 
 
-@receiver(m2m_changed , sender=Cart.products.through)
+@receiver(m2m_changed, sender=Cart.products.through)
 def save_post(sender, instance, **kwargs):
     """
     Автоматически считает общую стоимость корзины и количество продуктов

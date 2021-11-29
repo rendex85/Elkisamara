@@ -6,7 +6,7 @@ from main.models import ChristmasTree, Category, Customer, Cart, CartProduct, Or
 
 class ProductAdmin(admin.ModelAdmin):
     search_fields = ("title", "slug", "description")
-    readonly_fields = ('image_tag',)
+    readonly_fields = ("image_tag",)
 
 
 @admin.register(ChristmasTree)
@@ -27,8 +27,8 @@ class CustomerAdmin(admin.ModelAdmin):
 
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
-    filter_horizontal = ('products',)
-    readonly_fields = ('final_price', "total_products")
+    filter_horizontal = ("products",)
+    readonly_fields = ("final_price", "total_products")
 
 
 @admin.register(CartProduct)
@@ -38,7 +38,10 @@ class CartProductAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    search_fields = ("customer", "pk",)
+    search_fields = (
+        "customer",
+        "pk",
+    )
     list_display = ("__str__", "created_at", "customer")
     list_filter = ("created_at", "status")
     readonly_fields = ("order_content_description",)
