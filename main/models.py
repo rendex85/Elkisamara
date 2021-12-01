@@ -49,6 +49,7 @@ class CategoryManager(models.Manager):
     }
     PRODUCT_NAMES = {
         'Елки': 'christmastree',
+
     }
 
     def get_queryset(self):
@@ -125,6 +126,7 @@ class Product(models.Model):
         return self.__class__.__name__.lower()
 
 
+      
 class ChristmasTreeHeight(models.Model):
     tree_height = models.CharField(max_length=255, verbose_name='Рост елки, м', null=True, blank=True)
     tree_price = models.DecimalField(max_digits=9, decimal_places=2, verbose_name='Цена, руб')
@@ -136,6 +138,7 @@ class ChristmasTreeHeight(models.Model):
         verbose_name = 'Размеры Ёлок'
         verbose_name_plural = 'Размеры Ёлок'
 
+        
 
 class ChristmasTree(Product):
     choose_height = models.ManyToManyField(ChristmasTreeHeight, max_length=255, verbose_name='Рост елки, м', null=True,
@@ -151,6 +154,7 @@ class ChristmasTree(Product):
     def get_absolute_url(self):
         return get_product_url(self, 'product_detail')
 
+      
     class Meta:
         verbose_name = 'Елка'
         verbose_name_plural = 'Елки'
@@ -178,6 +182,9 @@ class Smartphone(Product):
         return get_product_url(self, 'product_detail')
 
 """
+
+class CartProduct(models.Model):
+
 
 
 class CartProduct(models.Model):
