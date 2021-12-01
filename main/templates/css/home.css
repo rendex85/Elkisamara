@@ -1,3 +1,9 @@
 .nav-item{
   justify-content: end;
 }
+
+.map_yandex{
+  position: absolute;
+  left: 300px;
+  top: 4701px;
+}
