@@ -1,14 +1,12 @@
 from django.views.generic.detail import SingleObjectMixin
 from django.views.generic import View
 
-from .models import Category, Cart, Customer
+from .models import Category, Cart, Customer, ChristmasTree
 
 
 class CategoryDetailMixin(SingleObjectMixin):
-
     CATEGORY_SLUG2PRODUCT_MODEL = {
-        'notebooks': None,
-        'smartphones': None
+        'christmas_tree': ChristmasTree,
     }
 
     def get_context_data(self, **kwargs):
@@ -24,7 +22,6 @@ class CategoryDetailMixin(SingleObjectMixin):
 
 
 class CartMixin(View):
-
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             customer = Customer.objects.filter(user=request.user).first()
