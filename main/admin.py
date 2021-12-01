@@ -1,7 +1,8 @@
 from django.contrib import admin
 
 # редактирование товаров
-from main.models import ChristmasTree, Category, Customer, Cart, CartProduct, Order
+from main.models import ChristmasTree, Category, Customer, Cart, CartProduct, Order, ChristmasTreeHeight, \
+    ChristmasTreeChoices
 
 
 class ProductAdmin(admin.ModelAdmin):
@@ -11,8 +12,8 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(ChristmasTree)
 class ChristmasTreeAdmin(ProductAdmin):
-    list_display = ("title", "tree_type", "price")
-    list_filter = ("tree_type",)
+    list_display = ("title", "product_type", "price")
+    list_filter = ("product_type",)
 
 
 @admin.register(Category)
@@ -34,6 +35,14 @@ class CartAdmin(admin.ModelAdmin):
 @admin.register(CartProduct)
 class CartProductAdmin(admin.ModelAdmin):
     search_fields = ("object_id",)
+    readonly_fields = ('get_tree_height',)
+
+    def get_tree_height(self, obj):
+        tree_height = obj.get_tree_height_object()
+        if tree_height:
+            return f"Высота дерева: {tree_height.tree_height.tree_height} м., цена за штуку: {tree_height.tree_height.tree_price} руб."
+        else:
+            return None
 
 
 @admin.register(Order)
@@ -44,9 +53,13 @@ class OrderAdmin(admin.ModelAdmin):
     readonly_fields = ("order_content_description",)
 
 
-"""
-admin.site.register(Category, CategoryAdmin)
-admin.site.register(Subcategory,SubcategoryAdmin)
-admin.site.register(Good, GoodAdmin)
-admin.site.register(Image, ImageAdmin)
-"""
+@admin.register(ChristmasTreeHeight)
+class ChristmasTreeHeightAdmin(admin.ModelAdmin):
+    pass
+    # search_fields = ("object_id",)
+
+
+@admin.register(ChristmasTreeChoices)
+class ChristmasTreeHeightAdmin(admin.ModelAdmin):
+    pass
+    # search_fields = ("object_id",)

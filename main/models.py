@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.db.models import Count
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -44,20 +45,36 @@ class LatestProducts:
 
 class CategoryManager(models.Manager):
     CATEGORY_NAME_COUNT_NAME = {
-        'Елки': 'tree__count',
-        'Смартфоны': 'smartphone__count'
+        'Елки': 'christmastree__count',
+    }
+    PRODUCT_NAMES = {
+        'Елки': 'christmastree',
+
     }
 
     def get_queryset(self):
         return super().get_queryset()
 
     def get_categories_for_left_sidebar(self):
-        models = get_models_for_count('notebook', 'smartphone')
-        qs = list(self.get_queryset().annotate(*models))
-        data = [
-            dict(name=c.name, url=c.get_absolute_url(), count=getattr(c, self.CATEGORY_NAME_COUNT_NAME[c.name]))
-            for c in qs
-        ]
+        data = []
+        for product_key, product_value in self.PRODUCT_NAMES.items():
+            category_dict = {"category_name": product_key, "category_slug": product_value, "subcategories": []}
+
+            content_type = ContentType.objects.get(model=product_value)
+            subcategories = content_type.model_class().objects.values("category").annotate(dcount=Count('category'))
+
+            for subcategory in subcategories:
+                subcategory_object = Category.objects.get(pk=subcategory["category"])
+                subcategory_dict = {"subcategory_name": subcategory_object.name, "subcategory_slug": subcategory_object.slug,
+                                    "types": []}
+
+                types = content_type.model_class().objects.values("product_type").filter(
+                    category_id=subcategory["category"]).annotate(
+                    dcount=Count('product_type'))
+                for type_product in types:
+                    subcategory_dict["types"].append({"product_type_name": type_product["product_type"]})
+                category_dict["subcategories"].append(subcategory_dict)
+            data.append(category_dict)
         return data
 
 
@@ -67,6 +84,7 @@ class Category(models.Model):
     objects = CategoryManager()
 
     def __str__(self):
+        print()
         return self.name
 
     def get_absolute_url(self):
@@ -88,6 +106,7 @@ class Product(models.Model):
     image = models.ImageField(verbose_name='Изображение', upload_to="products", null=True, blank=True, default=None)
     description = models.TextField(verbose_name='Описание', null=True, blank=True)
     price = models.DecimalField(max_digits=9, decimal_places=2, verbose_name='Цена, руб')
+    product_type = models.CharField(max_length=255, verbose_name='Тип продукта', null=True, blank=True)
 
     def image_tag(self):
         resize_img = 1
@@ -107,12 +126,25 @@ class Product(models.Model):
         return self.__class__.__name__.lower()
 
 
-class Notebook(Product):
+      
+class ChristmasTreeHeight(models.Model):
+    tree_height = models.CharField(max_length=255, verbose_name='Рост елки, м', null=True, blank=True)
+    tree_price = models.DecimalField(max_digits=9, decimal_places=2, verbose_name='Цена, руб')
+
+    def __str__(self):
+        return f"Рост: {self.tree_height} м., цена: {self.tree_price} руб."
+
+    class Meta:
+        verbose_name = 'Размеры Ёлок'
+        verbose_name_plural = 'Размеры Ёлок'
+
+        
 
 class ChristmasTree(Product):
-    height = models.DecimalField(max_digits=9, decimal_places=2, verbose_name='Рост елки, м', null=True, blank=True)
-    tree_type = models.CharField(max_length=255, verbose_name='Тип дерева', null=True, blank=True)
-    weight = models.IntegerField(verbose_name='Вес, кг', null=True, blank=True)
+    choose_height = models.ManyToManyField(ChristmasTreeHeight, max_length=255, verbose_name='Рост елки, м', null=True,
+                                           blank=True)
+    product_type = models.CharField(max_length=255, verbose_name='Тип дерева', null=True, blank=True)
+    # weight = models.IntegerField(verbose_name='Вес, кг', null=True, blank=True)
     from_place = models.CharField(max_length=512, verbose_name='Откуда привезена', null=True, blank=True)
     image = models.ImageField(verbose_name='Изображение', upload_to="products/tree", null=True, blank=True)
 
@@ -124,8 +156,8 @@ class ChristmasTree(Product):
 
       
     class Meta:
-        verbose_name = 'Товар: Елка'
-        verbose_name_plural = 'Товар: Елки'
+        verbose_name = 'Елка'
+        verbose_name_plural = 'Елки'
 
 
 """
@@ -165,16 +197,35 @@ class CartProduct(models.Model):
     qty = models.PositiveIntegerField(default=1)
     final_price = models.DecimalField(max_digits=9, decimal_places=2, verbose_name='Общая цена', null=True, blank=True)
 
+    def get_tree_height_object(self):
+        try:
+            return ChristmasTreeChoices.objects.get(cart_product=self)
+        except ChristmasTreeChoices.DoesNotExist:
+            return None
+
     def __str__(self):
         return f"{self.content_object.category}: {self.content_object.title} (id: {self.object_id}, кол-во: {self.qty})"
 
     def save(self, *args, **kwargs):
-        self.final_price = self.qty * self.content_object.price
+        if not self.content_type == ContentType.objects.get(model="christmastree"):
+            self.final_price = self.qty * self.content_object.price
         super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = 'Продукт в корзине'
         verbose_name_plural = 'Продукты в корзине'
+
+
+class ChristmasTreeChoices(models.Model):
+    tree = models.ForeignKey(ChristmasTree, verbose_name="Елка", on_delete=models.CASCADE)
+    cart_product = models.ForeignKey(CartProduct, verbose_name="Елка в корзине", on_delete=models.CASCADE,
+                                     related_name="tree_in_cart")
+    tree_height = models.ForeignKey(ChristmasTreeHeight, verbose_name="Рост Елки", on_delete=models.CASCADE, )
+
+    def save(self, *args, **kwargs):
+        self.cart_product.final_price = self.cart_product.qty * self.tree_height.tree_price
+        self.cart_product.save()
+        super().save(*args, **kwargs)
 
 
 class Cart(models.Model):
@@ -196,7 +247,7 @@ class Cart(models.Model):
 
 class Customer(models.Model):
     user = models.ForeignKey(User, verbose_name='Пользователь', on_delete=models.CASCADE)
-    phone = models.CharField(max_length=20, verbose_name='Номер телефона')
+    phone = models.CharField(max_length=20, verbose_name='Номер телефона', null=True, blank=True)
     address = models.CharField(max_length=255, verbose_name='Адрес', null=True, blank=True)
     orders = models.ManyToManyField('Order', verbose_name='Заказы покупателя', related_name='related_order', null=True,
                                     blank=True)
