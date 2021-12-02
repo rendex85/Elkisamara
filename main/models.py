@@ -64,7 +64,8 @@ class CategoryManager(models.Manager):
 
             for subcategory in subcategories:
                 subcategory_object = Category.objects.get(pk=subcategory["category"])
-                subcategory_dict = {"subcategory_name": subcategory_object.name, "subcategory_slug": subcategory_object.slug,
+                subcategory_dict = {"subcategory_name": subcategory_object.name,
+                                    "subcategory_slug": subcategory_object.slug,
                                     "types": []}
 
                 types = content_type.model_class().objects.values("product_type").filter(
@@ -83,7 +84,6 @@ class Category(models.Model):
     objects = CategoryManager()
 
     def __str__(self):
-        print()
         return self.name
 
     def get_absolute_url(self):
@@ -140,6 +140,7 @@ class ChristmasTreeHeight(models.Model):
 class ChristmasTree(Product):
     choose_height = models.ManyToManyField(ChristmasTreeHeight, max_length=255, verbose_name='Рост елки, м', null=True,
                                            blank=True)
+    price = models.DecimalField(max_digits=9, decimal_places=2, verbose_name='Цена, руб', null=True, blank=True)
     product_type = models.CharField(max_length=255, verbose_name='Тип дерева', null=True, blank=True)
     # weight = models.IntegerField(verbose_name='Вес, кг', null=True, blank=True)
     from_place = models.CharField(max_length=512, verbose_name='Откуда привезена', null=True, blank=True)
@@ -149,6 +150,9 @@ class ChristmasTree(Product):
         return "{} : {}".format(self.category.name, self.title)
 
     def get_absolute_url(self):
+        return get_product_url(self, 'product_detail')
+
+    def get_prices(self):
         return get_product_url(self, 'product_detail')
 
     class Meta:
