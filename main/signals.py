@@ -5,6 +5,7 @@ from main.models import Cart
 
 
 """@receiver(m2m_changed , sender=Cart.products.through)
+
 def save_post(sender, instance, **kwargs):
     cart_products = instance.products.all()
     print(cart_products)

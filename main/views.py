@@ -6,17 +6,19 @@ from django.http import HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.generic import DetailView, View
 
+
 from .models import Category, LatestProducts, Customer, Cart, CartProduct, ChristmasTree, ChristmasTreeChoices
 from .mixins import CategoryDetailMixin, CartMixin
+
 # from .forms import OrderForm
 from .utils import recalc_cart
 
 
 class BaseView(CartMixin, View):
-
     def get(self, request, *args, **kwargs):
         categories = Category.objects.get_categories_for_left_sidebar()
         products = LatestProducts.objects.get_products_for_main_page(
+          
             'christmastree', with_respect_to='christmastree'
         )
         context = {
@@ -32,8 +34,9 @@ class ProductDetailView(CartMixin, CategoryDetailMixin, DetailView):
         'christmastree': ChristmasTree,
     }
 
+
     def dispatch(self, request, *args, **kwargs):
-        self.model = self.CT_MODEL_MODEL_CLASS[kwargs['ct_model']]
+        self.model = self.CT_MODEL_MODEL_CLASS[kwargs["ct_model"]]
         self.queryset = self.model._base_manager.all()
         return super().dispatch(request, *args, **kwargs)
 
@@ -83,6 +86,7 @@ class CategoryDetailView(CartMixin, View):
             products = content_type.model_class().objects.all()
         context['categories'] = categories
         context['cart'] = self.cart
+
         context['ct_model'] = ct_model
         context['slug'] = subcategory_slug
         context['products'] = list(products)
@@ -104,11 +108,14 @@ class AddToCartView(CartMixin, View):
 
     @transaction.atomic
     def get(self, request, *args, **kwargs):
-        ct_model, product_slug = kwargs.get('ct_model'), kwargs.get('slug')
+        ct_model, product_slug = kwargs.get("ct_model"), kwargs.get("slug")
         content_type = ContentType.objects.get(model=ct_model)
         product = content_type.model_class().objects.get(slug=product_slug)
         cart_product, created = CartProduct.objects.get_or_create(
-            user=self.cart.owner, cart=self.cart, content_type=content_type, object_id=product.id
+            user=self.cart.owner,
+            cart=self.cart,
+            content_type=content_type,
+            object_id=product.id,
         )
         if created:
             if ct_model == "christmastree":
@@ -119,35 +126,39 @@ class AddToCartView(CartMixin, View):
         recalc_cart(self.cart)
         print(self.cart)
         messages.add_message(request, messages.INFO, "Товар успешно добавлен")
-        return HttpResponseRedirect('/cart/')
+        return HttpResponseRedirect("/cart/")
 
 
 class DeleteFromCartView(CartMixin, View):
-
     def get(self, request, *args, **kwargs):
-        ct_model, product_slug = kwargs.get('ct_model'), kwargs.get('slug')
+        ct_model, product_slug = kwargs.get("ct_model"), kwargs.get("slug")
         content_type = ContentType.objects.get(model=ct_model)
         product = content_type.model_class().objects.get(slug=product_slug)
         cart_product = CartProduct.objects.get(
-            user=self.cart.owner, cart=self.cart, content_type=content_type, object_id=product.id
+            user=self.cart.owner,
+            cart=self.cart,
+            content_type=content_type,
+            object_id=product.id,
         )
         self.cart.products.remove(cart_product)
         cart_product.delete()
         recalc_cart(self.cart)
         messages.add_message(request, messages.INFO, "Товар успешно удален")
-        return HttpResponseRedirect('/cart/')
+        return HttpResponseRedirect("/cart/")
 
 
 class ChangeQTYView(CartMixin, View):
-
     def post(self, request, *args, **kwargs):
-        ct_model, product_slug = kwargs.get('ct_model'), kwargs.get('slug')
+        ct_model, product_slug = kwargs.get("ct_model"), kwargs.get("slug")
         content_type = ContentType.objects.get(model=ct_model)
         product = content_type.model_class().objects.get(slug=product_slug)
         cart_product = CartProduct.objects.get(
-            user=self.cart.owner, cart=self.cart, content_type=content_type, object_id=product.id
+            user=self.cart.owner,
+            cart=self.cart,
+            content_type=content_type,
+            object_id=product.id,
         )
-        qty = int(request.POST.get('qty'))
+        qty = int(request.POST.get("qty"))
         cart_product.qty = qty
         cart_product.save()
         recalc_cart(self.cart)
@@ -172,7 +183,6 @@ class CartView(CartMixin, View):
 
 
 class CheckoutView(CartMixin, View):
-
     def get(self, request, *args, **kwargs):
         categories = Category.objects.get_categories_for_left_sidebar()
         # form = OrderForm(request.POST or None)
@@ -182,6 +192,7 @@ class CheckoutView(CartMixin, View):
             'form': None
         }
         return render(request, 'checkout.html', context)
+
 
 
 """class MakeOrderView(CartMixin, View):

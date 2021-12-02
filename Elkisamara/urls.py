@@ -16,6 +16,7 @@ from main.views import (
 )
 
 urlpatterns = [
+
                   path('admin/', admin.site.urls),
                   path('', BaseView.as_view(), name='base'),
                   path('products/<str:ct_model>/<str:slug>/', ProductDetailView.as_view(), name='product_detail'),
