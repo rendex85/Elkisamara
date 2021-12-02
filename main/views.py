@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.contrib.contenttypes.models import ContentType
 from django.contrib import messages
 from django.http import HttpResponseRedirect
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.generic import DetailView, View
 
 
@@ -25,7 +26,6 @@ class BaseView(CartMixin, View):
             'products': products,
             'cart': self.cart
         }
-        print(context)
         return render(request, 'PLACEHOLDER_BASE.html', context)
 
 
@@ -50,33 +50,63 @@ class ProductDetailView(CartMixin, CategoryDetailMixin, DetailView):
         context['cart'] = self.cart
         if context['ct_model'] == "christmastree":
             context['tree_choices'] = list(context['product'].choose_height.all())
-        print(context)
-
         return context
 
 
-class CategoryDetailView(CartMixin, CategoryDetailMixin, DetailView):
-    model = Category
-    queryset = Category.objects.all()
-    context_object_name = 'category'
-    template_name = 'PLACEHOLDER_CATEGORY.html'
-    slug_url_kwarg = 'slug'
+class CategoryDetailView(CartMixin, View):
+    """
+    Фильтрация товаров по категориям.
+    Парметры ссылки:
+    ct_model - название модели товара, верхний уровень категорий
+    slug - второй уровень, подкатегория. Создается в БД и привязывается к продукту
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+    GET-параметры:
+    tree_type - тип дерева (поле product_type в таблице продукты)
+
+    Примеры:
+    /category/christmastree/eli/?tree_type=Ель прикольная
+    /category/christmastree
+    /category/christmastree/pychta
+    """
+
+    def get(self, request, *args, **kwargs):
+        context = {}
+        ct_model, subcategory_slug = kwargs.get('ct_model'), kwargs.get('slug')
+        categories = Category.objects.get_categories_for_left_sidebar()
+        content_type = ContentType.objects.get(model=ct_model)
+        if subcategory_slug:
+            products = content_type.model_class().objects.filter(category__slug=subcategory_slug)
+            try:
+                tree_type = request.GET["tree_type"]
+                products = products.filter(product_type=tree_type)
+                context['tree_type'] = tree_type
+            except KeyError:
+                pass
+        else:
+            products = content_type.model_class().objects.all()
+        context['categories'] = categories
         context['cart'] = self.cart
-        print(context)
 
-        return context
+        context['ct_model'] = ct_model
+        context['slug'] = subcategory_slug
+        context['products'] = list(products)
+        return render(request, 'PLACEHOLDER_CATEGORY.html', context)
 
 
 class AddToCartView(CartMixin, View):
     """
-    Добавление в корзину:
-    Необходимо по ссылке генерируемой через urls.py передать как  ГЕТ-аргумент параметр tree_height_id для привязки
+    Добавление в корзину.
+    Парметры ссылки:
+    slug - slug-поле дерева
+
+    GET-параметры:
+    tree_height_id - id размера дерева с ценником
+
+    Пример:
+    /add-to-cart/christmastree/elka-from-web/?tree_height_id=2
     """
 
-
+    @transaction.atomic
     def get(self, request, *args, **kwargs):
         ct_model, product_slug = kwargs.get("ct_model"), kwargs.get("slug")
         content_type = ContentType.objects.get(model=ct_model)
@@ -94,7 +124,7 @@ class AddToCartView(CartMixin, View):
                                                     tree_height_id=tree_height_id)
             self.cart.products.add(cart_product)
         recalc_cart(self.cart)
-        print(cart_product)
+        print(self.cart)
         messages.add_message(request, messages.INFO, "Товар успешно добавлен")
         return HttpResponseRedirect("/cart/")
 
@@ -133,14 +163,23 @@ class ChangeQTYView(CartMixin, View):
         cart_product.save()
         recalc_cart(self.cart)
         messages.add_message(request, messages.INFO, "Кол-во успешно изменено")
-        return HttpResponseRedirect("/cart/")
+        print(self.cart)
+        return HttpResponseRedirect('/cart/')
 
 
 class CartView(CartMixin, View):
+    """
+    Для получения ct_model для продукта, надо обрпться к iter_elem.content_type.model при итерации по
+    Чтобы получить данные о выбранном размере елки надо вызвать get_tree_height_object при итерации по cart.products.all
+    """
+
     def get(self, request, *args, **kwargs):
         categories = Category.objects.get_categories_for_left_sidebar()
-        context = {"cart": self.cart, "categories": categories}
-        return render(request, "cart.html", context)
+        context = {
+            'cart': self.cart,
+            'categories': categories
+        }
+        return render(request, 'PLACEHOLDER_CART.html', context)
 
 
 class CheckoutView(CartMixin, View):

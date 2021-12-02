@@ -12,8 +12,9 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(ChristmasTree)
 class ChristmasTreeAdmin(ProductAdmin):
-    list_display = ("title", "product_type", "price")
+    list_display = ("title", "product_type")
     list_filter = ("product_type",)
+    exclude = ['price']
 
 
 @admin.register(Category)
