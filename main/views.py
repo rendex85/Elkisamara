@@ -1,12 +1,15 @@
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.views import LoginView
 from django.db import transaction
 from django.shortcuts import render
 from django.contrib.contenttypes.models import ContentType
 from django.contrib import messages
 from django.http import HttpResponseRedirect
+from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
-from django.views.generic import DetailView, View
+from django.views.generic import DetailView, View, CreateView, FormView
 
-
+from .forms import LoginUserForm, RegisterUserForm, OrderForm
 from .models import Category, LatestProducts, Customer, Cart, CartProduct, ChristmasTree, ChristmasTreeChoices
 from .mixins import CategoryDetailMixin, CartMixin
 
@@ -18,7 +21,7 @@ class BaseView(CartMixin, View):
     def get(self, request, *args, **kwargs):
         categories = Category.objects.get_categories_for_left_sidebar()
         products = LatestProducts.objects.get_products_for_main_page(
-          
+
             'christmastree', with_respect_to='christmastree'
         )
         context = {
@@ -26,14 +29,25 @@ class BaseView(CartMixin, View):
             'products': products,
             'cart': self.cart
         }
-        return render(request, 'PLACEHOLDER_BASE.html', context)
+
+        return render(request, 'html/test.html', context)
+
+
+class LoginUserView(LoginView):
+    form_class = LoginUserForm
+    template_name = 'html/login_test.html'
+
+
+class RegisterUserView(CreateView):
+    form_class = RegisterUserForm
+    template_name = 'html/register_test.html'
+    success_url = reverse_lazy('login')
 
 
 class ProductDetailView(CartMixin, CategoryDetailMixin, DetailView):
     CT_MODEL_MODEL_CLASS = {
         'christmastree': ChristmasTree,
     }
-
 
     def dispatch(self, request, *args, **kwargs):
         self.model = self.CT_MODEL_MODEL_CLASS[kwargs["ct_model"]]
@@ -50,6 +64,7 @@ class ProductDetailView(CartMixin, CategoryDetailMixin, DetailView):
         context['cart'] = self.cart
         if context['ct_model'] == "christmastree":
             context['tree_choices'] = list(context['product'].choose_height.all())
+
         return context
 
 
@@ -126,6 +141,7 @@ class AddToCartView(CartMixin, View):
         recalc_cart(self.cart)
         print(self.cart)
         messages.add_message(request, messages.INFO, "Товар успешно добавлен")
+
         return HttpResponseRedirect("/cart/")
 
 
@@ -163,7 +179,7 @@ class ChangeQTYView(CartMixin, View):
         cart_product.save()
         recalc_cart(self.cart)
         messages.add_message(request, messages.INFO, "Кол-во успешно изменено")
-        print(self.cart)
+        # print(self.cart)
         return HttpResponseRedirect('/cart/')
 
 
@@ -179,23 +195,45 @@ class CartView(CartMixin, View):
             'cart': self.cart,
             'categories': categories
         }
+        print(context)
         return render(request, 'PLACEHOLDER_CART.html', context)
 
 
-class CheckoutView(CartMixin, View):
-    def get(self, request, *args, **kwargs):
-        categories = Category.objects.get_categories_for_left_sidebar()
-        # form = OrderForm(request.POST or None)
-        context = {
-            'cart': self.cart,
-            'categories': categories,
-            'form': None
-        }
-        return render(request, 'checkout.html', context)
+class CheckoutView(CartMixin, FormView):
+    template_name = 'html/checkout_test.html'
+    form_class = OrderForm
+    success_url = '/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['cart'] = self.cart
+        return context
+
+    def form_valid(self, form):
+        customer = Customer.objects.get(user=self.request.user)
+        new_order = form.save(commit=False)
+        new_order.customer = customer
+        new_order.first_name = form.cleaned_data['first_name']
+        new_order.last_name = form.cleaned_data['last_name']
+        new_order.phone = form.cleaned_data['phone']
+        new_order.address = form.cleaned_data['address']
+        new_order.buying_type = form.cleaned_data['buying_type']
+        # new_order.order_date = form.cleaned_data['order_date']
+        new_order.comment = form.cleaned_data['comment']
+        self.cart.in_order = True
+        self.cart.save()
+        new_order.cart = self.cart
+        new_order.save()
+        customer.orders.add(new_order)
+        messages.add_message(self.request, messages.INFO, 'Спасибо за заказ! Менеджер с Вами свяжется')
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        print(form)
+        return HttpResponseRedirect('/')
 
 
-
-"""class MakeOrderView(CartMixin, View):
+class MakeOrderView(CartMixin, View):
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -209,7 +247,7 @@ class CheckoutView(CartMixin, View):
             new_order.phone = form.cleaned_data['phone']
             new_order.address = form.cleaned_data['address']
             new_order.buying_type = form.cleaned_data['buying_type']
-            new_order.order_date = form.cleaned_data['order_date']
+            # new_order.order_date = form.cleaned_data['order_date']
             new_order.comment = form.cleaned_data['comment']
             new_order.save()
             self.cart.in_order = True
@@ -219,4 +257,4 @@ class CheckoutView(CartMixin, View):
             customer.orders.add(new_order)
             messages.add_message(request, messages.INFO, 'Спасибо за заказ! Менеджер с Вами свяжется')
             return HttpResponseRedirect('/')
-        return HttpResponseRedirect('/checkout/')"""
+        return HttpResponseRedirect('/checkout/')

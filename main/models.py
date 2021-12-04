@@ -49,7 +49,6 @@ class LatestProducts:
 
 
 class CategoryManager(models.Manager):
-  
     CATEGORY_NAME_COUNT_NAME = {
         'Елки': 'christmastree__count',
     }
@@ -57,7 +56,6 @@ class CategoryManager(models.Manager):
         'Елки': 'christmastree',
 
     }
-
 
     def get_queryset(self):
         return super().get_queryset()
@@ -75,13 +73,15 @@ class CategoryManager(models.Manager):
                 subcategory_object = Category.objects.get(pk=subcategory["category"])
                 subcategory_dict = {"subcategory_name": subcategory_object.name,
                                     "subcategory_slug": subcategory_object.slug,
+                                    "subcategory_url": category_dict["category_slug"] + "/" + subcategory_object.slug,
                                     "types": []}
 
                 types = content_type.model_class().objects.values("product_type").filter(
                     category_id=subcategory["category"]).annotate(
                     dcount=Count('product_type'))
                 for type_product in types:
-                    subcategory_dict["types"].append({"product_type_name": type_product["product_type"]})
+                    subcategory_dict["types"].append(
+                        {"product_type_name": type_product["product_type"], })
                 category_dict["subcategories"].append(subcategory_dict)
             data.append(category_dict)
 
@@ -120,7 +120,6 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=9, decimal_places=2, verbose_name='Цена, руб')
     product_type = models.CharField(max_length=255, verbose_name='Тип продукта', null=True, blank=True)
 
-
     def image_tag(self):
         resize_img = 1
         if self.image.height > self.image.width:
@@ -140,7 +139,6 @@ class Product(models.Model):
         return self.__class__.__name__.lower()
 
 
-      
 class ChristmasTreeHeight(models.Model):
     tree_height = models.CharField(max_length=255, verbose_name='Рост елки, м', null=True, blank=True)
     tree_price = models.DecimalField(max_digits=9, decimal_places=2, verbose_name='Цена, руб')
@@ -152,7 +150,6 @@ class ChristmasTreeHeight(models.Model):
         verbose_name = 'Размеры Ёлок'
         verbose_name_plural = 'Размеры Ёлок'
 
-        
 
 class ChristmasTree(Product):
     choose_height = models.ManyToManyField(ChristmasTreeHeight, max_length=255, verbose_name='Рост елки, м', null=True,
@@ -162,7 +159,6 @@ class ChristmasTree(Product):
     # weight = models.IntegerField(verbose_name='Вес, кг', null=True, blank=True)
     from_place = models.CharField(max_length=512, verbose_name='Откуда привезена', null=True, blank=True)
     image = models.ImageField(verbose_name='Изображение', upload_to="products/tree", null=True, blank=True)
-
 
     def __str__(self):
         return "{} : {}".format(self.category.name, self.title)
@@ -174,10 +170,8 @@ class ChristmasTree(Product):
         return get_product_url(self, 'product_detail')
 
     class Meta:
-      
         verbose_name = 'Елка'
         verbose_name_plural = 'Елки'
-
 
 
 """
@@ -285,13 +279,11 @@ class Cart(models.Model):
 
 
 class Customer(models.Model):
-  
     user = models.ForeignKey(User, verbose_name='Пользователь', on_delete=models.CASCADE)
     phone = models.CharField(max_length=20, verbose_name='Номер телефона', null=True, blank=True)
     address = models.CharField(max_length=255, verbose_name='Адрес', null=True, blank=True)
     orders = models.ManyToManyField('Order', verbose_name='Заказы покупателя', related_name='related_order', null=True,
                                     blank=True)
-
 
     def __str__(self):
         return "Покупатель: {} {}".format(self.user.first_name, self.user.last_name)
@@ -372,15 +364,6 @@ class Order(models.Model):
         )
 
     def save(self, *args, **kwargs):
-        # Если имя, фамилия и телефон в заказе пустые - указываем данные самого пользователя
-        if not (self.first_name or self.last_name or self.phone):
-            self.first_name = self.customer.user.first_name
-            self.first_name = self.customer.user.last_name
-            self.first_name = self.customer.phone
-        # Если не указан адрес, используем адрес пользователя
-        if not self.address:
-            self.address = self.customer.address
-
         # Составляем описание заказа
         description_string = (
             f"Заказ №{self.id}\nОбщая сумма заказа: {self.cart.final_price} руб., "

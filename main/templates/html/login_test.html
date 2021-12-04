@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div class="form-error">{{ form.non_field_errors }}</div>
+<form method="post">
+    {% csrf_token %}
+    {% for f in form %}
+        <p><label class="form-label" for="{{ f.id_for_label }}">{{ f.label }}: </label>{{ f }}</p>
+        <div class="form-error">{{ f.errors }}</div>
+
+    {% endfor %}
+<button type="submit">Войти</button>
+</form>
+</body>
+</html>

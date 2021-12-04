@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+{% for product in products %}
+    {% for height in product.choose_height.all %}
+    <h1>{{product.title }} {{height.tree_price }} руб</h1>
+    {% endfor %}
+{% endfor %}
+<h1>{{user.is_authenticated }}</h1>
+</body>
+</html>
