@@ -11,7 +11,7 @@ from main.views import (
     AddToCartView,
     DeleteFromCartView,
     ChangeQTYView,
-    CheckoutView, LoginUserView, RegisterUserView, MakeOrderView,
+    CheckoutView, LoginUserView, RegisterUserView, OrderListView, OrderDetailView,
     # MakeOrderView
 )
 
@@ -30,7 +30,6 @@ urlpatterns = [
                   path('checkout/', CheckoutView.as_view(), name='checkout'),
                   path('login/', LoginUserView.as_view(), name='login'),
                   path('register/', RegisterUserView.as_view(), name='register'),
-                  # path('accounts/', include('django.contrib.auth.urls'))
-                  path('make-order/', MakeOrderView.as_view(), name='make_order')
-
+                  path('orders/', OrderListView.as_view(), name='list_orders'),
+                  path('order/<int:pk>', OrderDetailView.as_view(), name='list_orders')
               ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -5,11 +5,9 @@ from .models import Category, Cart, Customer, ChristmasTree
 
 
 class CategoryDetailMixin(SingleObjectMixin):
-  
     CATEGORY_SLUG2PRODUCT_MODEL = {
         'christmas_tree': ChristmasTree,
     }
-
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

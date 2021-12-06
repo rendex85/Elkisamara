@@ -366,16 +366,22 @@ class Order(models.Model):
     def save(self, *args, **kwargs):
         # Составляем описание заказа
         description_string = (
-            f"Заказ №{self.id}\nОбщая сумма заказа: {self.cart.final_price} руб., "
+            f"Заказ №{self.pk}\nОбщая сумма заказа: {self.cart.final_price} руб., "
             f"общее число товаров: {self.cart.total_products} шт.\n\n"
             f"Товары:\n"
         )
 
         for product in self.cart.products.all():
             description_string += (
-                f"Наименование: {product.content_object.title}. Количество: {product.qty} шт., "
-                f"суммарная стоимость: {product.final_price} руб.\n"
-            )
+                f"Наименование: {product.content_object.title}. Количество: {product.qty} шт., ")
+            if product.content_type.model == "christmastree":
+                tree_height_obj = ChristmasTreeChoices.objects.get(cart_product_id=product.pk)
+                description_string += (f"размер елки: {tree_height_obj.tree_height.tree_height} м.,"
+                                       )
+
+            description_string += (f"суммарная стоимость: {product.final_price} руб.\n"
+                                   )
+
         self.order_content_description = description_string
         super().save(*args, **kwargs)
 

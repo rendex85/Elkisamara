@@ -1,5 +1,8 @@
+import re
+
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django import forms
+from django.core.exceptions import ValidationError
 
 from main.models import User, Order
 
@@ -17,6 +20,23 @@ class RegisterUserForm(UserCreationForm):
 
 
 class OrderForm(forms.ModelForm):
+    def clean_first_name(self):
+        first_name = self.cleaned_data.get('first_name')
+        if not first_name:
+            raise ValidationError("Введите Ваше имя")
+
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone')
+        if not phone:
+            raise ValidationError("Введите Ваш телефон")
+        if not bool(re.match(r"^((8|\+7)[\- ]?)?(\(?\d{3}\)?[\- ]?)?[\d\- ]{7,10}$", phone)):
+            raise ValidationError("Введите Ваш номер корректно")
+
+    def clean_address(self):
+        address = self.cleaned_data.get('address')
+        if not address:
+            raise ValidationError("Введите Ваш адрес")
+
     class Meta:
         model = Order
         fields = ['first_name', 'last_name', 'phone', 'address', "buying_type", "comment"]

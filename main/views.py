@@ -7,10 +7,10 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
-from django.views.generic import DetailView, View, CreateView, FormView
+from django.views.generic import DetailView, View, CreateView, FormView, ListView
 
 from .forms import LoginUserForm, RegisterUserForm, OrderForm
-from .models import Category, LatestProducts, Customer, Cart, CartProduct, ChristmasTree, ChristmasTreeChoices
+from .models import Category, LatestProducts, Customer, Cart, CartProduct, ChristmasTree, ChristmasTreeChoices, Order
 from .mixins import CategoryDetailMixin, CartMixin
 
 # from .forms import OrderForm
@@ -209,6 +209,7 @@ class CheckoutView(CartMixin, FormView):
         context['cart'] = self.cart
         return context
 
+    @transaction.atomic()
     def form_valid(self, form):
         customer = Customer.objects.get(user=self.request.user)
         new_order = form.save(commit=False)
@@ -228,33 +229,32 @@ class CheckoutView(CartMixin, FormView):
         messages.add_message(self.request, messages.INFO, 'Спасибо за заказ! Менеджер с Вами свяжется')
         return super().form_valid(form)
 
-    def form_invalid(self, form):
-        print(form)
-        return HttpResponseRedirect('/')
+
+class OrderListView(CartMixin, ListView, ):
+    model = Order
+    template_name = 'ORDER_LIST_PLACEHOLDER.html'
+    context_object_name = 'orders_list'
+
+    def get_context_data(self, **kwargs):
+        context = super(ListView, self).get_context_data(**kwargs)
+        context['cart'] = self.cart
+        print(context)
+        return context
+
+    def get_queryset(self):
+        return Order.objects.filter(customer__user=self.request.user).order_by('created_at')
 
 
-class MakeOrderView(CartMixin, View):
+class OrderDetailView(CartMixin, DetailView, ):
+    model = Order
+    template_name = 'ORDER_PLACEHOLDER.html'
+    context_object_name = 'order'
 
-    @transaction.atomic
-    def post(self, request, *args, **kwargs):
-        form = OrderForm(request.POST or None)
-        customer = Customer.objects.get(user=request.user)
-        if form.is_valid():
-            new_order = form.save(commit=False)
-            new_order.customer = customer
-            new_order.first_name = form.cleaned_data['first_name']
-            new_order.last_name = form.cleaned_data['last_name']
-            new_order.phone = form.cleaned_data['phone']
-            new_order.address = form.cleaned_data['address']
-            new_order.buying_type = form.cleaned_data['buying_type']
-            # new_order.order_date = form.cleaned_data['order_date']
-            new_order.comment = form.cleaned_data['comment']
-            new_order.save()
-            self.cart.in_order = True
-            self.cart.save()
-            new_order.cart = self.cart
-            new_order.save()
-            customer.orders.add(new_order)
-            messages.add_message(request, messages.INFO, 'Спасибо за заказ! Менеджер с Вами свяжется')
-            return HttpResponseRedirect('/')
-        return HttpResponseRedirect('/checkout/')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['cart'] = self.cart
+        print(context)
+        return context
+
+    def get_queryset(self):
+        return Order.objects.filter(customer__user=self.request.user)
